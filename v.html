@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading... | Pixguard</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="viewer-container">
+    <img id="previewImage" src="" alt="Content Preview">
+
+    <div class="button-group">
+      <a href="#" id="watchBtn" class="btn primary">Watch Now</a>
+      <a href="#" id="downloadBtn" class="btn primary">Download</a>
+    </div>
+
+    <div class="button-group secondary">
+      <a href="#" id="watchBtn2" class="btn secondary-btn">Continue Watching</a>
+      <a href="#" id="downloadBtn2" class="btn secondary-btn">Direct Download</a>
+    </div>
+
+    <!-- Adsterra Banner Placeholder -->
+    <div class="ad-banner">
+      <p>--- Your Adsterra Banner Here ---</p>
+      <!-- Paste Adsterra script/code here -->
+    </div>
+
+    <div class="note">
+      <h3>কিভাবে ভিডিও ডাউনলোড করবেন?</h3>
+      <ol>
+        <li>“Continue” বাটনে ক্লিক করুন।</li>
+        <li>এড এ রিডাইরেক্ট করলে Back করুন।</li>
+        <li>৫–৮ সেকেন্ড অপেক্ষা করুন।</li>
+        <li>“Get Link” আসলে ক্লিক দিন।</li>
+        <li>আবার Back করে Get Link চাপুন।</li>
+        <li><strong>নোট:</strong> ভুল পেজ এ নিলে ব্যাক করুন।</li>
+      </ol>
+    </div>
+
+    <div class="final-btn">
+      <a href="redirect.html" class="btn big-btn">Click Here to Continue</a>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="js/firebase.js"></script>
+  <script>
+    const db = firebase.database();
+    const shortCode = window.location.hash.substring(1);
+
+    if (!shortCode) {
+      document.body.innerHTML = "<h1 style='text-align:center;margin-top:100px'>Invalid Link!</h1>";
+    }
+
+    db.ref("links/" + shortCode).once("value").then(snap => {
+      const data = snap.val();
+      if (!data) {
+        document.body.innerHTML = "<h1 style='text-align:center;margin-top:100px'>Link Not Found!</h1>";
+        return;
+      }
+
+      // Increment total visits
+      db.ref("totalVisits").transaction(val => (val || 0) + 1);
+
+      document.getElementById("previewImage").src = data.imageUrl;
+
+      const redirectToAd = () => {
+        window.location.href = data.adUrl;
+      };
+
+      document.getElementById("watchBtn").href = "redirect.html#" + shortCode;
+      document.getElementById("downloadBtn").href = "redirect.html#" + shortCode;
+      document.getElementById("watchBtn2").href = "redirect.html#" + shortCode;
+      document.getElementById("downloadBtn2").href = "redirect.html#" + shortCode;
+
+      // Save to localStorage for redirect.html
+      localStorage.setItem("linkData_" + shortCode, JSON.stringify(data));
+    });
+  </script>
+</body>
+</html>
