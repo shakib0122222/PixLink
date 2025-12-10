@@ -1,96 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pixguard URL Shortener</title>
-  <link rel="stylesheet" href="assets/style.css" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <title>Pixguard - Premium URL Shortener</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    :root {--primary:#6366f1;--secondary:#a8555ff;--accent:#ff6b6b;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:white;min-height:100vh;}
+    .container{max-width:600px;margin:0 auto;padding:20px;}
+    header{text-align:center;padding:60px 20px 40px;}
+    h1{font-size:3rem;font-weight:700;background:linear-gradient(45deg,#c084fc,#818cf8); -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    p.subtitle{font-size:1.4rem;margin-top:15px;opacity:0.9;}
+    .card{background:rgba(255,255,255,0.12);backdrop-filter:blur(16px);border-radius:20px;padding:30px;margin:20px 0;box-shadow:0 15px 35px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);}
+    input,button{width:100%;padding:18px;border-radius:15px;margin:12px 0;font-size:1.1rem;border:none;outline:none;}
+    input{background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.2);}
+    input::placeholder{color:rgba(255,255,255,0.7);}
+    button{background:linear-gradient(45deg,var(--primary),var(--secondary));font-weight:600;cursor:pointer;box-shadow:0 10px 30px rgba(99,102,241,0.4);}
+    button:hover{transform:translateY(-4px);box-shadow:0 15px 40px rgba(99,102,241,0.6);}
+    .loader{display:none;width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid #6366f1;border-radius:50%;animation:spin 1s linear infinite;margin:30px auto;}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    #result{background:rgba(0,0,0,0.3);padding:25px;border-radius:15px;margin-top:20px;display:none;}
+    .copy-btn{background:#10b981;padding:12px 25px;border-radius:10px;margin-top:15px;}
+    .stats{background:rgba(0,0,0,0.3);text-align:center;padding:25px;border-radius:15px;margin:30px 0;font-size:1.8rem;font-weight:700;}
+    footer{text-align:center;padding:30px;font-size:1rem;opacity:0.8;}
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Pixguard URL Shortener</h1>
-    <p>Shorten Your Long URL Easily Here</p>
-  </header>
-
   <div class="container">
-    <div class="form-box">
-      <input type="url" id="contentUrl" placeholder="Enter Content URL (Video/Download Link)" required />
-      <input type="url" id="adUrl" placeholder="Enter Ads URL (Redirect here first)" required />
-      <input type="file" id="image" id="imageUpload" accept="image/*" />
-      <button id="shortenBtn">Generate Short Link</button>
+    <header>
+      <h1>Pixguard</h1>
+      <p class="subtitle">Shorten Your Long URL Easily Here</p>
+    </header>
+
+    <div class="card">
+      <input type="url" id="contentUrl" placeholder="Content Link (Video/Download)" required />
+      <input type="url" id="adUrl" placeholder="Ad Link (এড দেখার পর যাবে)" required />
+      <input type="file" id="image" accept="image/*" required />
+      <button id="generateBtn">Generate Short Link</button>
+      <div class="loader" id="loader"></div>
+      <div id="result"></div>
     </div>
 
-    <div id="result" class="result hidden">
-      <p>Your Short Link:</p>
-      <input type="text" id="shortLink" readonly />
-      <button onclick="copyLink()">Copy</button>
-    </div>
-
-    <div class="stats">
-      <p>Total Visits: <span id="totalVisits">0</span></p>
-    </div>
+    <div class="stats">মোট ভিজিটর: <span id="visits">0</span></div>
+    <footer>© 2025 Pixguard • Made with Love in Bangladesh</footer>
   </div>
 
-  <footer>
-    <p>© 2025 Pixguard • Made with ❤️</p>
-  </footer>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-  <script src="js/firebase.js"></script>
   <script>
-    const db = firebase.database();
-    const storage = firebase.storage();
+    const firebaseConfig = {apiKey:"AIzaSyDpv3NaTYjrmeoN19itDACcvEpMggd72H8",authDomain:"url-c576f.firebaseapp.com",projectId:"url-c576f",storageBucket:"url-c576f.firebasestorage.app",messagingSenderId:"681639648878",appId:"1:681639648878:web:31d36b7e0c8031c806d07f",measurementId:"G-HKS96B2T7T"};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // Total visits counter
-    const visitsRef = db.ref("totalVisits");
-    visitsRef.on("value", (snap) => {
-      document.getElementById("totalVisits").textContent = snap.val() || 0;
+    // লাইভ ভিজিট কাউন্ট
+    db.collection("stats").doc("total").onSnapshot(doc => {
+      document.getElementById("visits").textContent = (doc.data()?.count || 0).toLocaleString();
     });
 
-    document.getElementById("shortenBtn").addEventListener("click", async () => {
-      const contentUrl = document.getElementById("contentUrl").value.trim();
-      const adUrl = document.getElementById("adUrl").value.trim();
-      const file = document.getElementById("imageUpload").files[0];
+    document.getElementById("generateBtn").onclick = async () => {
+      const content = document.getElementById("contentUrl").value.trim();
+      const ad = document.getElementById("adUrl").value.trim();
+      const file = document.getElementById("image").files[0];
+      if (!content || !ad || !file) return alert("সবকিছু পূরণ করো!");
 
-      if (!contentUrl || !adUrl || !file) {
-        alert("All fields are required!");
-        return;
-      }
+      document.getElementById("loader").style.display = "block";
+      document.getElementById("generateBtn").disabled = true;
 
-      const shortCode = Math.random().toString(36).substring(2, 8);
-      const imageRef = storage.ref(`images/${shortCode}`);
-      await imageRef.put(file);
-      const imageUrl = await imageRef.getDownloadURL();
+      const id = Math.random().toString(36).substring(2,10);
+      const shortLink = location.origin + "/v.html?id=" + id;
 
-      await db.ref("links/" + shortCode).set({
-        contentUrl,
-        adUrl,
-        imageUrl,
-        createdAt: Date.now()
-      });
+      try {
+        const ref = firebase.storage().ref("thumbs/" + id);
+        await ref.put(file);
+        const imageUrl = await ref.getDownloadURL();
 
-      // Increment total visits (only when someone visits v.html)
-      const result = document.getElementById("result");
-      const shortLinkInput = document.getElementById("shortLink");
-      shortLinkInput.value = `${window.location.origin}/v.html#${shortCode}`;
-      result.classList.remove("hidden");
+        await db.collection("links").doc(id).set({
+          content, ad, imageUrl,
+          created: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-      // Reset form
-      document.getElementById("contentUrl").value = "";
-      document.getElementById("adUrl").value = "";
-      document.getElementById("imageUpload").value = "";
-    });
+        document.getElementById("result").style.display = "block";
+        document.getElementById("result").innerHTML = `
+          <p style="font-size:1.3rem;margin-bottom:15px;">তোমার লিংক তৈরি হয়েছে!</p>
+          <a href="${shortLink}" target="_blank" style="color:#a5b4fc;font-size:1.2rem;">${shortLink}</a>
+          <br><br>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${shortLink}').then(()=>this.innerText='কপি হয়েছে')">Copy Link</button>
+        `;
+      } catch(e) { alert("Error: " + e.message); }
 
-    function copyLink() {
-      const input = document.getElementById("shortLink");
-      input.select();
-      document.execCommand("copy");
-      alert("Copied to clipboard!");
-    }
+      document.getElementById("loader").style.display = "none";
+      document.getElementById("generateBtn").disabled = false;
+    };
   </script>
 </body>
 </html>
