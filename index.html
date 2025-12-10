@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pixguard URL Shortener</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+</head>
+<body>
+  <header>
+    <h1>Pixguard URL Shortener</h1>
+    <p>Shorten Your Long URL Easily Here</p>
+  </header>
+
+  <div class="container">
+    <div class="form-box">
+      <input type="url" id="contentUrl" placeholder="Enter Content URL (Video/Download Link)" required />
+      <input type="url" id="adUrl" placeholder="Enter Ads URL (Redirect here first)" required />
+      <input type="file" id="image" id="imageUpload" accept="image/*" />
+      <button id="shortenBtn">Generate Short Link</button>
+    </div>
+
+    <div id="result" class="result hidden">
+      <p>Your Short Link:</p>
+      <input type="text" id="shortLink" readonly />
+      <button onclick="copyLink()">Copy</button>
+    </div>
+
+    <div class="stats">
+      <p>Total Visits: <span id="totalVisits">0</span></p>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2025 Pixguard • Made with ❤️</p>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase.js"></script>
+  <script>
+    const db = firebase.database();
+    const storage = firebase.storage();
+
+    // Total visits counter
+    const visitsRef = db.ref("totalVisits");
+    visitsRef.on("value", (snap) => {
+      document.getElementById("totalVisits").textContent = snap.val() || 0;
+    });
+
+    document.getElementById("shortenBtn").addEventListener("click", async () => {
+      const contentUrl = document.getElementById("contentUrl").value.trim();
+      const adUrl = document.getElementById("adUrl").value.trim();
+      const file = document.getElementById("imageUpload").files[0];
+
+      if (!contentUrl || !adUrl || !file) {
+        alert("All fields are required!");
+        return;
+      }
+
+      const shortCode = Math.random().toString(36).substring(2, 8);
+      const imageRef = storage.ref(`images/${shortCode}`);
+      await imageRef.put(file);
+      const imageUrl = await imageRef.getDownloadURL();
+
+      await db.ref("links/" + shortCode).set({
+        contentUrl,
+        adUrl,
+        imageUrl,
+        createdAt: Date.now()
+      });
+
+      // Increment total visits (only when someone visits v.html)
+      const result = document.getElementById("result");
+      const shortLinkInput = document.getElementById("shortLink");
+      shortLinkInput.value = `${window.location.origin}/v.html#${shortCode}`;
+      result.classList.remove("hidden");
+
+      // Reset form
+      document.getElementById("contentUrl").value = "";
+      document.getElementById("adUrl").value = "";
+      document.getElementById("imageUpload").value = "";
+    });
+
+    function copyLink() {
+      const input = document.getElementById("shortLink");
+      input.select();
+      document.execCommand("copy");
+      alert("Copied to clipboard!");
+    }
+  </script>
+</body>
+</html>
