@@ -1,83 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loading... | Pixguard</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <title>Pixguard - Get Your File</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+    body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#0f0f23,#1e1b4b);color:white;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;}
+    .card{background:rgba(255,255,255,0.1);backdrop-filter:blur(15px);border-radius:20px;padding:25px;width:100%;max-width:500px;margin:20px 0;box-shadow:0 20px 40px rgba(0,0,0,0.4);}
+    img{width:100%;border-radius:15px;margin-bottom:20px;max-height:70vh;object-fit:contain;}
+    .btns{display:flex;gap:15px;margin:20px 0;flex-wrap:wrap;justify-content:center;}
+    button{padding:16px 30px;border:none;border-radius:12px;font-size:1.3rem;font-weight:600;cursor:pointer;flex:1;min-width:140px;}
+    .green{background:#22c55e;}.red{background:#ef4444;}.orange{background:#f97316;}.purple{background:#a855f7;}
+    .ad{width:100%;max-width:336px;height:280px;background:#1e293b;border-radius:15px;margin:30px auto;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+    .note{background:#451a03;padding:20px;border-radius:15px;margin:20px 0;text-align:left;line-height:1.8;}
+    #countdown{font-size:5rem;font-weight:700;margin:40px 0;}
+    #getLink{display:none;padding:20px 60px;font-size:1.8rem;background:#6366f1;border-radius:20px;box-shadow:0 15px 40px rgba(99,102,241,0.6);}
+  </style>
 </head>
 <body>
-  <div class="viewer-container">
-    <img id="previewImage" src="" alt="Content Preview">
-
-    <div class="button-group">
-      <a href="#" id="watchBtn" class="btn primary">Watch Now</a>
-      <a href="#" id="downloadBtn" class="btn primary">Download</a>
+  <div class="card">
+    <img id="thumb" src="" alt="Preview">
+    <div class="btns">
+      <button class="green" onclick="goAd()">Watch Now</button>
+      <button class="red" onclick="goAd()">Download</button>
+    </div>
+    <div class="btns">
+      <button class="orange" onclick="goAd()">Continue</button>
+      <button class="purple" onclick="goAd()">Get Link</button>
     </div>
 
-    <div class="button-group secondary">
-      <a href="#" id="watchBtn2" class="btn secondary-btn">Continue Watching</a>
-      <a href="#" id="downloadBtn2" class="btn secondary-btn">Direct Download</a>
-    </div>
-
-    <!-- Adsterra Banner Placeholder -->
-    <div class="ad-banner">
-      <p>--- Your Adsterra Banner Here ---</p>
-      <!-- Paste Adsterra script/code here -->
-    </div>
+    <div class="ad">Adsterra Banner Here (336×280)</div>
 
     <div class="note">
-      <h3>কিভাবে ভিডিও ডাউনলোড করবেন?</h3>
-      <ol>
-        <li>“Continue” বাটনে ক্লিক করুন।</li>
-        <li>এড এ রিডাইরেক্ট করলে Back করুন।</li>
-        <li>৫–৮ সেকেন্ড অপেক্ষা করুন।</li>
-        <li>“Get Link” আসলে ক্লিক দিন।</li>
-        <li>আবার Back করে Get Link চাপুন।</li>
-        <li><strong>নোট:</strong> ভুল পেজ এ নিলে ব্যাক করুন।</li>
-      </ol>
+      <b>ডাউনলোড করার সহজ নিয়ম:</b><br>
+      • Continue বাটনে ক্লিক করুন<br>
+      • এড দেখে ব্যাক করুন<br>
+      • ৫ সেকেন্ড ওয়েট করুন<br>
+      • "Get Link" চাপুন → আবার এড → ব্যাক → আবার Get Link → ডাউনলোড শুরু!
     </div>
 
-    <div class="final-btn">
-      <a href="redirect.html" class="btn big-btn">Click Here to Continue</a>
-    </div>
+    <button class="orange" id="start">Click Here to Continue</button>
+    <div id="countdown">5</div>
+    <button id="getLink">Get Link</button>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="js/firebase.js"></script>
   <script>
-    const db = firebase.database();
-    const shortCode = window.location.hash.substring(1);
+    const firebaseConfig = {apiKey:"AIzaSyDpv3NaTYjrmeoN19itDACcvEpMggd72H8",authDomain:"url-c576f.firebaseapp.com",projectId:"url-c576f",storageBucket:"url-c576f.firebasestorage.app",messagingSenderId:"681639648878",appId:"1:681639648878:web:31d36b7e0c8031c806d07f",measurementId:"G-HKS96B2T7T"};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    if (!shortCode) {
-      document.body.innerHTML = "<h1 style='text-align:center;margin-top:100px'>Invalid Link!</h1>";
-    }
+    let adLink = "", finalLink = "", clicked = false;
+    const id = new URLSearchParams(location.search).get("id");
 
-    db.ref("links/" + shortCode).once("value").then(snap => {
-      const data = snap.val();
-      if (!data) {
-        document.body.innerHTML = "<h1 style='text-align:center;margin-top:100px'>Link Not Found!</h1>";
-        return;
+    if (!id) { document.body.innerHTML = "<h1 style='color:white;margin-top:100px'>Invalid Link</h1>"; }
+
+    db.collection("links").doc(id).get().then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        adLink = data.ad; finalLink = data.content;
+        document.getElementById("thumb").src = data.imageUrl;
+
+        // ভিজিট কাউন্ট
+        db.collection("stats").doc("total").set({count: firebase.firestore.FieldValue.increment(1)}, {merge: true});
+      } else {
+        document.body.innerHTML = "<h1 style='color:white;margin-top:100px'>Link Expired!</h1>";
       }
-
-      // Increment total visits
-      db.ref("totalVisits").transaction(val => (val || 0) + 1);
-
-      document.getElementById("previewImage").src = data.imageUrl;
-
-      const redirectToAd = () => {
-        window.location.href = data.adUrl;
-      };
-
-      document.getElementById("watchBtn").href = "redirect.html#" + shortCode;
-      document.getElementById("downloadBtn").href = "redirect.html#" + shortCode;
-      document.getElementById("watchBtn2").href = "redirect.html#" + shortCode;
-      document.getElementById("downloadBtn2").href = "redirect.html#" + shortCode;
-
-      // Save to localStorage for redirect.html
-      localStorage.setItem("linkData_" + shortCode, JSON.stringify(data));
     });
+
+    function goAd() { if(adLink) location.href = adLink; }
+
+    document.getElementById("start").onclick = () => {
+      document.getElementById("start").style.display = "none";
+      let time = 5;
+      const timer = setInterval(() => {
+        time--;
+        document.getElementById("countdown").textContent = time;
+        if (time <= 0) {
+          clearInterval(timer);
+          document.getElementById("countdown").innerHTML = "Ready!";
+          document.getElementById("getLink").style.display = "block";
+        }
+      }, 1000);
+    };
+
+    document.getElementById("getLink").onclick = () => {
+      if (!clicked) { clicked = true; location.href = adLink; }
+      else { location.href = finalLink; }
+    };
   </script>
 </body>
 </html>
